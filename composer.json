@@ -4,12 +4,16 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-ctype": "*",
+        "ext-dom": "*",
         "ext-iconv": "*",
+        "ext-xml": "*",
+        "nesbot/carbon": "*",
         "phpdocumentor/type-resolver": "^1.8",
         "phpstan/phpdoc-parser": "^1.29",
         "symfony/cache": "7.0.*",
+        "symfony/clock": "7.0.*",
         "symfony/config": "7.0.*",
         "symfony/console": "7.0.*",
         "symfony/dependency-injection": "7.1.*",
@@ -32,7 +36,8 @@
         "symfony/validator": "7.0.*",
         "symfony/var-dumper": "7.0.*",
         "symfony/var-exporter": "7.0.*",
-        "symfony/yaml": "7.0.*"
+        "symfony/yaml": "7.0.*",
+      "ext-http": "*"
     },
     "config": {
         "allow-plugins": {
@@ -54,12 +59,7 @@
     },
     "replace": {
         "symfony/polyfill-ctype": "*",
-        "symfony/polyfill-iconv": "*",
-        "symfony/polyfill-php72": "*",
-        "symfony/polyfill-php73": "*",
-        "symfony/polyfill-php74": "*",
-        "symfony/polyfill-php80": "*",
-        "symfony/polyfill-php81": "*"
+        "symfony/polyfill-iconv": "*"
     },
     "scripts": {
         "auto-scripts": {

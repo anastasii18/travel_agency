@@ -23,7 +23,7 @@ class CalculateTheCostOfTravelTest extends WebTestCase
         $this->assertEquals(200, $response->getStatusCode());
         $content = json_decode($response->getContent(), true);
         $this->assertSame(516.15, $content['resultTravelCost']);
-
+        restore_exception_handler();
     }
 
     public function testWithMiddleBookingDiscount(): void
@@ -42,7 +42,7 @@ class CalculateTheCostOfTravelTest extends WebTestCase
         $this->assertEquals(200, $response->getStatusCode());
         $content = json_decode($response->getContent(), true);
         $this->assertSame(7495.5, $content['resultTravelCost']);
-
+        restore_exception_handler();
     }
 
     public function testWithEarlyBookingAndChildDiscount(): void
@@ -61,6 +61,7 @@ class CalculateTheCostOfTravelTest extends WebTestCase
         $this->assertEquals(200, $response->getStatusCode());
         $content = json_decode($response->getContent(), true);
         $this->assertSame(6502.188, $content['resultTravelCost']);
+        restore_exception_handler();
     }
 
     public function testWithErrorDateOfBirth(): void
@@ -75,8 +76,9 @@ class CalculateTheCostOfTravelTest extends WebTestCase
         );
 
         $response = $client->getResponse();
-        $this->assertEquals(500, $response->getStatusCode());
+        $this->assertEquals(400, $response->getStatusCode());
         $this->assertEquals("Field dateOfBirth is required!!", json_decode($response->getContent())->error);
+        restore_exception_handler();
     }
 
     public function testWithErrorTravelCost(): void
@@ -91,8 +93,9 @@ class CalculateTheCostOfTravelTest extends WebTestCase
         );
 
         $response = $client->getResponse();
-        $this->assertEquals(500, $response->getStatusCode());
+        $this->assertEquals(400, $response->getStatusCode());
         $this->assertEquals("Field travelCost is required!!", json_decode($response->getContent())->error);
+        restore_exception_handler();
     }
 
 }

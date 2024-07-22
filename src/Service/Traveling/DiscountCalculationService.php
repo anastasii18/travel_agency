@@ -4,6 +4,7 @@ namespace App\Service\Traveling;
 
 
 use App\DTO\Traveling;
+use Carbon\Carbon;
 
 class DiscountCalculationService
 {
@@ -15,11 +16,15 @@ class DiscountCalculationService
     private const MIDDLE_BOOKING_DISCOUNT = 0.05;
     private const LATE_BOOKING_DISCOUNT = 0.03;
     private const MAX_BOOKING_DISCOUNT = 1500;
+    private const PRESCHOOL_YEARS_MIN = 3;
+    private const PRESCHOOL_YEARS_MAX = 6;
+    private const STUDENT_YEARS_MAX = 12;
+    private const TEENAGE_YEARS_MAX =  18;
+
 
     private function childAgeCalculation(Traveling $traveling) : int
     {
-        $interval = $traveling->dateOfBirth->diff($traveling->dateOfTravelStart);
-        return  $interval->y;
+        return $traveling->getDateOfBirth()->diffInYears($traveling->getDateOfTravelStart());
     }
 
     private function childDiscountCalculation(Traveling $traveling) : float
@@ -28,15 +33,15 @@ class DiscountCalculationService
         $discount = 0;
 
         switch ($age) {
-            case ($age >= 3 && $age < 6):
-                $discount = $traveling->travelCost * self::PRESCHOOL_DISCOUNT;
+            case ($age >= self::PRESCHOOL_YEARS_MIN && $age < self::PRESCHOOL_YEARS_MAX):
+                $discount = $traveling->getTravelCost() * self::PRESCHOOL_DISCOUNT;
                 break;
-            case ($age >= 6 && $age < 12):
-                $discount = ($traveling->travelCost * self::STUDENT_DISCOUNT < self::MAX_CHILD_DISCOUNT) ?
-                    $traveling->travelCost * self::STUDENT_DISCOUNT : self::MAX_CHILD_DISCOUNT;
+            case ($age >= self::PRESCHOOL_YEARS_MAX && $age < self::STUDENT_YEARS_MAX):
+                $discount = ($traveling->getTravelCost() * self::STUDENT_DISCOUNT < self::MAX_CHILD_DISCOUNT) ?
+                    $traveling->getTravelCost() * self::STUDENT_DISCOUNT : self::MAX_CHILD_DISCOUNT;
                 break;
-            case ($age >= 12 && $age < 18):
-                $discount = $traveling->travelCost * self::TEENAGE_DISCOUNT;
+            case ($age >= self::STUDENT_YEARS_MAX && $age < self::TEENAGE_YEARS_MAX):
+                $discount = $traveling->getTravelCost() * self::TEENAGE_DISCOUNT;
                 break;
             default:
                 break;
@@ -45,23 +50,26 @@ class DiscountCalculationService
         return $discount;
     }
 
+    private function isDateInRange(Carbon $date, Carbon $start, Carbon $end): bool
+    {
+        return $date >= $start && $date < $end;
+    }
+
     private function periodOfStartTravel(Traveling $traveling) : array
     {
         $periodOfTravelStart = [];
-        $year = $traveling->dateOfPayment->format('Y');
+        $year = $traveling->getDateOfPayment()->format('Y');
 
         //с 1 апреля по 30 сентября следующего года
-        if ($traveling->dateOfTravelStart >= new \DateTime("$year-04-01" )&&
-            $traveling->dateOfTravelStart <= new \DateTime("$year-09-30 +1 year")) {
+        if  ($this->isDateInRange($traveling->getDateOfTravelStart(), Carbon::create($year, 4, 1, 0 ), Carbon::create($year, 10, 1, 0)->addYear())) {
             $periodOfTravelStart[] = 1;
         }
         // с 1 октября текущего года по 14 января следующего года
-        if ($traveling->dateOfTravelStart >= new \DateTime("$year-10-01") &&
-            $traveling->dateOfTravelStart <= new \DateTime("$year-01-14 +1 year")) {
+        if ($this->isDateInRange($traveling->getDateOfTravelStart(),Carbon::create($year, 10, 1, 0 ),Carbon::create($year, 1, 15, 0)->addYear())) {
             $periodOfTravelStart[] = 2;
         }
         // с 15 января следующего года и далее
-        if ($traveling->dateOfTravelStart >= new \DateTime("$year-01-15 +1 year")) {
+        if ($traveling->getDateOfTravelStart() >= Carbon::create($year, 1, 15, 0)->addYear()) {
             $periodOfTravelStart[] = 3;
         }
         return $periodOfTravelStart;
@@ -70,74 +78,72 @@ class DiscountCalculationService
     private function periodOfPayment(Traveling $traveling) : array
     {
         $periodOfPayment = [];
-        $year = $traveling->dateOfPayment->format('Y');
+        $year = $traveling->getDateOfPayment() ->format('Y');
 
         // ноябрь текущего и ранее
-        if ($traveling->dateOfPayment < new \DateTime("$year-12-01")) {
+        if ($traveling->getDateOfPayment()  < Carbon::create($year, 12, 1, 0)) {
             $periodOfPayment[] = 10;
         }
         // декабрь текущего года
-        if ($traveling->dateOfPayment >= new \DateTime("$year-12-01") &&
-            $traveling->dateOfPayment < new \DateTime("$year-01-01 +1 year")){
+        if ($this->isDateInRange($traveling->getDateOfPayment(), Carbon::create($year, 12, 1, 0), Carbon::create($year, 1, 1, 0)->addYear())){
             $periodOfPayment[] = 11;
         }
         // январь следующего года
-        if  ($traveling->dateOfTravelStart >= new \DateTime("$year-01-01 +1 year") &&
-            $traveling->dateOfTravelStart <  new \DateTime("$year-02-29 +1 year")){
+        if  ($this->isDateInRange($traveling->getDateOfPayment(), Carbon::create($year, 1, 1, 0)->addYear(), Carbon::create($year, 2, 29, 0)->addYear())){
             $periodOfPayment[] = 12;
         }
 
         // март текущего года и ранее
-        if ($traveling->dateOfPayment < new \DateTime("$year-04-01")) {
+        if ($traveling->getDateOfPayment()  < Carbon::create($year, 4, 1, 0)) {
             $periodOfPayment[] = 20;
         }
         // апрель текущего года
-        if ($traveling->dateOfPayment >= new \DateTime("$year-04-01") &&
-            $traveling->dateOfPayment < new \DateTime("$year-05-01")){
+        if ($this->isDateInRange($traveling->getDateOfPayment(),Carbon::create($year, 4, 1, 0), Carbon::create($year, 5, 1, 0))){
             $periodOfPayment[] = 21;
         }
         // май текущего года
-        if ($traveling->dateOfPayment >= new \DateTime("$year-05-01") &&
-            $traveling->dateOfPayment < new \DateTime("$year-06-01")){
+        if ($this->isDateInRange($traveling->getDateOfPayment(),Carbon::create($year, 9, 5, 1), Carbon::create($year, 6, 1, 0))){
             $periodOfPayment[] = 22;
         }
 
         // август текущего года и ранее
-        if ($traveling->dateOfPayment < new \DateTime("$year-09-01")){
+        if ($traveling->getDateOfPayment() < Carbon::create($year, 9, 1, 0)){
             $periodOfPayment[] = 30;
         }
         // сентябрь текущего года
-        if ($traveling->dateOfPayment >= new \DateTime("$year-09-01") &&
-            $traveling->dateOfPayment <new \DateTime("$year-10-01")){
+        if ($this->isDateInRange($traveling->getDateOfPayment(),Carbon::create($year, 9, 1, 0), Carbon::create($year, 10, 1, 0))){
             $periodOfPayment[] = 31;
         }
         // октябрь текущего года
-        if ($traveling->dateOfPayment >= new \DateTime("$year-10-01") &&
-            $traveling->dateOfPayment <  new \DateTime("$year-11-01")){
+        if ($this->isDateInRange($traveling->getDateOfPayment(),Carbon::create($year, 10, 1, 0), Carbon::create($year, 11, 1, 0))){
             $periodOfPayment[] = 32;
         }
         return $periodOfPayment;
+    }
+
+    private function isPeriodInArray($array, $periodOfPayment, $periodOfStartTravel): bool
+    {
+        if ((in_array($array[0], $periodOfPayment ) && in_array(1, $periodOfStartTravel )) ||
+            (in_array($array[1], $periodOfPayment ) && in_array(2, $periodOfStartTravel )) ||
+            (in_array($array[2], $periodOfPayment ) && in_array(3, $periodOfStartTravel )))
+            return true;
+
+        return false;
     }
 
     private function earlyBookingDiscountCalculation(array $periodOfStartTravel, array $periodOfPayment, float $travelCost) : float
     {
         $discount = [0];
 
-        if ((in_array(10, $periodOfPayment ) && in_array(1, $periodOfStartTravel )) or
-            (in_array(20, $periodOfPayment ) && in_array(2, $periodOfStartTravel )) or
-            (in_array(30, $periodOfPayment ) && in_array(3, $periodOfStartTravel ))){
+        if ($this->isPeriodInArray([10,20,30], $periodOfPayment, $periodOfStartTravel)){
             $discount[] = $travelCost * self::EARLY_BOOKIG_DISCOUNT;
         }
 
-        if ((in_array(11, $periodOfPayment ) && in_array(1, $periodOfStartTravel )) or
-            (in_array(21, $periodOfPayment ) && in_array(2, $periodOfStartTravel )) or
-            (in_array(31, $periodOfPayment ) && in_array(3, $periodOfStartTravel ))){
+        if ($this->isPeriodInArray([11,21,31], $periodOfPayment, $periodOfStartTravel)){
             $discount[] = $travelCost * self::MIDDLE_BOOKING_DISCOUNT;
         }
 
-        if ((in_array(12, $periodOfPayment ) && in_array(1, $periodOfStartTravel )) or
-            (in_array(22, $periodOfPayment ) && in_array(2, $periodOfStartTravel )) or
-            (in_array(32, $periodOfPayment ) && in_array(3, $periodOfStartTravel ))){
+        if ($this->isPeriodInArray([12,22,32], $periodOfPayment, $periodOfStartTravel)){
             $discount[] = $travelCost * self::LATE_BOOKING_DISCOUNT;
         }
         return (max($discount) < self::MAX_BOOKING_DISCOUNT) ? max($discount) : self::MAX_BOOKING_DISCOUNT;
@@ -146,12 +152,16 @@ class DiscountCalculationService
     public function fullDiscountCalculation(Traveling $traveling) : float
     {
         $childDiscount = $this->childDiscountCalculation($traveling);
+        $travelCostWithChildDiscount = $traveling->getTravelCost() - $childDiscount;
+
+        if(!$traveling->getDateOfPayment()){
+            return $travelCostWithChildDiscount;
+        }
+
         $periodOfStartTravel = $this->periodOfStartTravel($traveling);
         $periodOfPayment = $this->periodOfPayment($traveling);
-
-        $travelCostWithChildDiscount = $traveling->travelCost - $childDiscount;
-
         $earlyBookingDiscount = $this->earlyBookingDiscountCalculation($periodOfStartTravel, $periodOfPayment, $travelCostWithChildDiscount);
-        return $traveling->travelCost - $childDiscount - $earlyBookingDiscount;
+
+        return $travelCostWithChildDiscount - $earlyBookingDiscount;
     }
 }
