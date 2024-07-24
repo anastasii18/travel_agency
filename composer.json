@@ -7,6 +7,7 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-dom": "*",
+        "ext-http": "*",
         "ext-iconv": "*",
         "ext-xml": "*",
         "nesbot/carbon": "*",
@@ -33,11 +34,11 @@
         "symfony/runtime": "7.0.*",
         "symfony/serializer": "7.0.*",
         "symfony/string": "7.0.*",
+        "symfony/translation": "7.1.*",
         "symfony/validator": "7.0.*",
         "symfony/var-dumper": "7.0.*",
         "symfony/var-exporter": "7.0.*",
-        "symfony/yaml": "7.0.*",
-      "ext-http": "*"
+        "symfony/yaml": "7.0.*"
     },
     "config": {
         "allow-plugins": {
